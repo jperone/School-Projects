@@ -1,0 +1,69 @@
+#WEIGHTED LEAST SQUARES, REMEDIAL MEASURE FOR NON-CONSTANT VARIANCE OF ERROR TERMS
+
+#Computer assisted learning data set
+
+x <- c(16,14,22,10,14,17,10,13,19,12,18,11) #Total number of responses in completing a lesson
+y <- c(77,70,85,50,62,70,55,63,88,57,81,51) #Cost of computer time in cents
+library(MASS) #For studres function
+
+
+#MEAN-CENTERED OLS REGRESSION
+x.c <- x-mean(x)
+olsfit.c <- lm(y~x.c)
+summary(olsfit.c) 
+#B0 is the mean cost of computer time for a student with an average number of responses in completing a lesson
+#B1 is the slope for all students, meaning for every one unit change in x the ave response would be an increase of 3.26 in cost of computer time
+
+
+#PLOT OF X.C, Y WITH REGRESSION LINE
+plot(x.c,y)
+abline(olsfit.c, col= "red")
+
+
+#DIAGNOSTIC PLOTS
+plot(x.c, olsfit.c$residuals, xlab = "Responses", ylab = "OLS fit residuals") 
+abline(h=0, lty=2)
+#Slight megaphone shape indicating non-constant variance
+#Suggests that as the number of responses increases the more spread out the residuals are
+#Variance increases as the predictor variable x becomes larger;
+
+plot(x.c, abs(olsfit.c$residuals), xlab = "Responses", ylab = "OLS fit absolute value of residuals")
+#We see a positive relationship between the residuals meaning there could be non-constant variance
+
+
+#ABSOLUTE VALUE OF RESIDUALS REGRESSION DUE TO POSSIBLE NON-CONSTANT VARIANCE OF ERROR TERMS
+sd.func <- lm(abs(olsfit.c$residuals)~x.c)
+summary(sd.func)
+#Absolute residual is an estimate of the SD so we can use it to regress against predictor
+#We obviously do not have the true SD's so we must estimate them
+
+
+#COMPUTING WEIGHTS
+wghts <- 1/((sd.func$fitted.values)^2)
+wghts
+#See a smaller weight for a larger SD because the weight is inversely proportional to the error variance, 
+#Meaning it reflects the information in that observation. 
+#An observation with small error variance has a large weight since it contains more information than an observation with large error variance.
+
+
+#MEAN-CENTERED REGRESSION WITH WEIGHTS INSERTED
+wlsfit <- lm(y~x.c, weights = wghts)
+summary(wlsfit)
+summary(olsfit.c)
+
+
+#MODEL COMPARISON
+plot(x.c, y, xlab= "Total # of responses in completing a lesson", ylab= "Cost of computer time", main = "Ordinary vs. Weighted Least Squares")
+abline(olsfit.c, col= "red")
+abline(wlsfit, col= "blue")
+legend("topleft", c("Weighted", "Unweighted"), lty = c(1,1), lwd = c(2,2), col=c("blue", "red"), bty = "n")
+#Not a huge difference between ols and wls fitted lines
+
+
+#COMPARING RESIDUAL PLOTS OF OLS VS. WLS
+par(mfrow=c(1,2))
+plot(x.c, studres(olsfit.c), xlab = "Total # of responses in completing a lesson", ylab = "OLS Studentized Deleted Residuals")
+plot(x.c, studres(wlsfit), xlab = "Total # of responses in completing a lesson", ylab = "WLS Studentized Deleted Residuals")
+#we want studentized deleted residuals here
+#now they are more randomly scattered about 0 and tighter around 0 meaning a better fit overall
+
